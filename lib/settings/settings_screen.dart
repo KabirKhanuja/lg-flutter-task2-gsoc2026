@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'lg_config_storage.dart';
 import 'lg_connection_config.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -16,21 +17,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   LgConnectionConfig? config;
 
-  void _saveConfig() {
-    final newConfig = LgConnectionConfig(
-      host: _hostController.text.trim(),
-      username: _userController.text.trim(),
-      port: int.tryParse(_portController.text) ?? 22,
-      password: _passwordController.text,
-    );
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  @override
+  void dispose() {
+    _hostController.dispose();
+    _userController.dispose();
+    _portController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadConfig() async {
+    final loaded = await LgConfigStorage.load();
+    if (!mounted || loaded == null) return;
+
+    _hostController.text = loaded.host;
+    _userController.text = loaded.username;
+    _portController.text = loaded.port.toString();
+    _passwordController.text = loaded.password;
 
     setState(() {
-      config = newConfig;
+      config = loaded;
     });
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('LG configuration saved')));
   }
 
   @override
@@ -70,7 +83,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 24),
 
             ElevatedButton(
-              onPressed: _saveConfig,
+              onPressed: () async {
+                final port = int.tryParse(_portController.text) ?? 22;
+
+                final newConfig = LgConnectionConfig(
+                  host: _hostController.text.trim(),
+                  username: _userController.text.trim(),
+                  port: port,
+                  password: _passwordController.text,
+                );
+
+                await LgConfigStorage.save(newConfig);
+
+                if (!context.mounted) return;
+
+                setState(() {
+                  config = newConfig;
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('LG configuration saved')),
+                );
+              },
               child: const Text('Save Configuration'),
             ),
 

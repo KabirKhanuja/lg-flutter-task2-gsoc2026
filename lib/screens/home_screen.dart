@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/action_button.dart';
 import '../settings/lg_config_storage.dart';
 import '../services/lg_ssh_service.dart';
+import 'package:flutter/services.dart';
 
 enum LgStatus { connecting, connected, disconnected }
 
@@ -27,9 +28,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _attemptAutoConnect() async {
     try {
       await _ensureConnected();
-    } catch (_) {
-      // already handled in _ensureConnected
-    }
+    } catch (_) {}
+  }
+
+  Future<String> _loadKmlFromAssets(String path) async {
+    return await rootBundle.loadString(path);
   }
 
   Widget _statusWidget() {
@@ -84,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       // loading
       final elapsed = DateTime.now().difference(attemptStart);
-      final remaining = const Duration(seconds: 6) - elapsed;
+      final remaining = const Duration(seconds: 2) - elapsed;
       if (remaining > Duration.zero) {
         await Future.delayed(remaining);
       }
@@ -136,27 +139,8 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Send Pyramid KML',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                const pyramidKml = '''
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Placemark>
-    <name>Pyramid</name>
-    <Polygon>
-      <outerBoundaryIs>
-        <LinearRing>
-          <coordinates>
-            0,0,0
-            0.01,0,0
-            0.01,0.01,0
-            0,0.01,0
-            0,0,0
-          </coordinates>
-        </LinearRing>
-      </outerBoundaryIs>
-    </Polygon>
-  </Placemark>
-</kml>
-''';
-                await _lgService!.sendKml(pyramidKml);
+                final kml = await _loadKmlFromAssets('assets/kml/pyramid.kml');
+                await _lgService!.sendKml(kml);
               }),
             ),
             const SizedBox(height: 12),

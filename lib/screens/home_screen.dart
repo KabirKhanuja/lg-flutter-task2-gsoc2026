@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../widgets/action_button.dart';
 import '../settings/lg_config_storage.dart';
 import '../services/lg_ssh_service.dart';
-import 'package:flutter/services.dart';
 import '../settings/settings_screen.dart';
+import '../services/kml/kml_loader.dart';
 
 enum LgStatus { connecting, connected, disconnected }
 
@@ -30,10 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await _ensureConnected();
     } catch (_) {}
-  }
-
-  Future<String> _loadKmlFromAssets(String path) async {
-    return await rootBundle.loadString(path);
   }
 
   Widget _statusWidget() {
@@ -101,6 +97,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _runAction(Future<void> Function() action) async {
     try {
       await _ensureConnected();
+
+      if (_lgService == null) {
+        throw Exception('LG service not initialized');
+      }
+
       if (_status != LgStatus.connected) return;
       await action();
     } catch (e) {
@@ -150,8 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Send Pyramid KML',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                final kml = await _loadKmlFromAssets('assets/kml/pyramid.kml');
-                await _lgService!.sendKml(kml);
+                final kmlContent = await KmlLoader.loadPyramidKml();
+                await _lgService!.sendKml(kmlContent);
               }),
             ),
             const SizedBox(height: 12),

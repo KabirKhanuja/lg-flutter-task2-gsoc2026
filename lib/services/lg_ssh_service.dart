@@ -1,71 +1,84 @@
-import 'package:ssh2/ssh2.dart';
+import 'dart:convert';
+import 'package:dartssh2/dartssh2.dart';
 import '../settings/lg_connection_config.dart';
 
-class LgService {
+class LgSshService {
   final LgConnectionConfig config;
   SSHClient? _client;
 
-  LgService(this.config);
+  LgSshService(this.config);
 
+  // connecting to the lg master
   Future<void> connect() async {
+    if (_client != null) return;
+
+    final socket = await SSHSocket.connect(config.host, config.port);
+
     _client = SSHClient(
-      host: config.host,
-      port: config.port,
+      socket,
       username: config.username,
-      passwordOrKey: config.password,
+      onPasswordRequest: () => config.password,
     );
-
-    await _client!.connect();
   }
 
+  // for disconnecting
   Future<void> disconnect() async {
-    _client?.disconnect();
+    _client?.close();
+    _client = null;
   }
 
-  Future<void> sendCommand(String command) async {
+  Future<void> _exec(String command) async {
     if (_client == null) {
-      throw Exception('LG not connected');
+      throw Exception('LG SSH not connected');
     }
-    await _client!.execute(command);
+
+    final session = await _client!.execute(command);
+    await session.done;
   }
 
-  //to clear all KMLs
+  // to clear all KMLs
   Future<void> clearKmls() async {
-    await sendCommand('echo "" > /var/www/html/kmls.txt');
+    await _exec("echo '' > /var/www/html/kmls.txt");
   }
 
-  //to clear all logos
+  // to clear all logos
   Future<void> clearLogos() async {
-    await sendCommand('echo "" > /var/www/html/logos.txt');
+    await _exec("echo '' > /var/www/html/logos.txt");
   }
 
-  // sending a KML file content directly
+  // to send KML content
   Future<void> sendKml(String kmlContent) async {
-    final escaped = kmlContent.replaceAll("'", r"'\''");
+    final encoded = base64Encode(utf8.encode(kmlContent));
 
-    await sendCommand("echo '$escaped' > /var/www/html/kmls.txt");
+    await _exec("echo '$encoded' | base64 --decode > /var/www/html/kmls.txt");
   }
 
-  // flying to my home cityyyy
+  // flying to a location
   Future<void> flyTo({
-    required double lat,
-    required double lon,
+    required double latitude,
+    required double longitude,
     double altitude = 5000,
+    double tilt = 45,
+    double heading = 0,
+    double range = 1000,
   }) async {
     final flyToKml =
         '''
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <FlyTo>
-    <duration>3</duration>
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"
+     xmlns:gx="http://www.google.com/kml/ext/2.2">
+  <gx:FlyTo>
+    <gx:duration>3</gx:duration>
+    <gx:flyToMode>smooth</gx:flyToMode>
     <LookAt>
-      <latitude>$lat</latitude>
-      <longitude>$lon</longitude>
+      <latitude>$latitude</latitude>
+      <longitude>$longitude</longitude>
       <altitude>$altitude</altitude>
-      <heading>0</heading>
-      <tilt>45</tilt>
-      <range>1000</range>
+      <heading>$heading</heading>
+      <tilt>$tilt</tilt>
+      <range>$range</range>
     </LookAt>
-  </FlyTo>
+  </gx:FlyTo>
 </kml>
 ''';
 

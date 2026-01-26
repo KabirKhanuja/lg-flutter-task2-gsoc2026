@@ -36,6 +36,10 @@ class LgSshService {
     await session.done;
   }
 
+  String _shellEscapeSingleQuotes(String value) {
+    return value.replaceAll("'", "'\"'\"'");
+  }
+
   // to clear all KMLs
   Future<void> clearKmls() async {
     await _exec("echo '' > /var/www/html/kmls.txt");
@@ -47,7 +51,8 @@ class LgSshService {
   }
 
   Future<void> sendLogo(String logoUrl) async {
-    await _exec("echo \"logo=$logoUrl\" > /var/www/html/logos.txt");
+    final safeUrl = _shellEscapeSingleQuotes(logoUrl);
+    await _exec("echo 'logo=$safeUrl' > /var/www/html/logos.txt");
   }
 
   // to send KML content

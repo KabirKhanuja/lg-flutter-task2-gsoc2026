@@ -56,8 +56,11 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             ActionButton(
               label: 'Show LG Logo',
+              enabled: _connected,
               onPressed: () => _runAction(() async {
-                await _lgService!.sendLogo('https://liquidgalaxy.eu/logo.png');
+                await _lgService!.sendLogo(
+                  'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjzI4JzY6oUy-dQaiW-HLmn5NQ7qiw7NUOoK-2cDU9cI6JwhPrNv0EkCacuKWFViEgXYrCFzlbCtHZQffY6a73j6_ATFjfeU7r6OxXxN5K8sGjfOlp3vvd6eCXZrozlu34fUG5_cKHmzZWa4axb-vJRKjLr2tryz0Zw30gTv3S0ET57xsCiD25WMPn3wA/s800/LIQUIDGALAXYLOGO.png',
+                );
               }),
             ),
             const SizedBox(height: 12),
@@ -93,6 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             ActionButton(
               label: 'Fly To Home City',
+              enabled: _connected,
               onPressed: () => _runAction(() async {
                 await _lgService!.flyTo(
                   latitude: 18.5204, // Pune
@@ -104,13 +108,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
             ActionButton(
               label: 'Clear Logos',
-              onPressed: () => _runAction(() async => _lgService!.clearLogos()),
+              enabled: _connected,
+              onPressed: () => _runAction(() async {
+                await _lgService!.clearLogos();
+              }),
             ),
             const SizedBox(height: 12),
 
             ActionButton(
               label: 'Clear KMLs',
-              onPressed: () => _runAction(() async => _lgService!.clearKmls()),
+              enabled: _connected,
+              onPressed: () => _runAction(() async {
+                await _lgService!.clearKmls();
+              }),
             ),
 
             const SizedBox(height: 24),

@@ -1,8 +1,46 @@
 import 'package:flutter/material.dart';
 import '../widgets/action_button.dart';
+import '../settings/lg_config_storage.dart';
+import '../services/lg_ssh_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  LgService? _lgService;
+  bool _connected = false;
+
+  Future<void> _ensureConnected() async {
+    if (_connected) return;
+
+    final config = await LgConfigStorage.load();
+    if (config == null) {
+      throw Exception('LG configuration not found. Please set it first.');
+    }
+
+    _lgService = LgService(config);
+    await _lgService!.connect();
+
+    setState(() {
+      _connected = true;
+    });
+  }
+
+  Future<void> _runAction(Future<void> Function() action) async {
+    try {
+      await _ensureConnected();
+      await action();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,19 +50,80 @@ class HomeScreen extends StatelessWidget {
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ActionButton(label: 'Show LG Logo', onPressed: () {}),
+            ActionButton(
+              label: 'Show LG Logo',
+              onPressed: () => _runAction(() async {
+                await _lgService!.sendCommand(
+                  'echo "logo=https://liquidgalaxy.eu/logo.png" > /var/www/html/logos.txt',
+                );
+              }),
+            ),
             const SizedBox(height: 12),
-            ActionButton(label: 'Send Pyramid KML', onPressed: () {}),
+
+            ActionButton(
+              label: 'Send Pyramid KML',
+              onPressed: () => _runAction(() async {
+                const pyramidKml = '''
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Placemark>
+    <name>Pyramid</name>
+    <Polygon>
+      <outerBoundaryIs>
+        <LinearRing>
+          <coordinates>
+            0,0,0
+            0.01,0,0
+            0.01,0.01,0
+            0,0.01,0
+            0,0,0
+          </coordinates>
+        </LinearRing>
+      </outerBoundaryIs>
+    </Polygon>
+  </Placemark>
+</kml>
+''';
+                await _lgService!.sendKml(pyramidKml);
+              }),
+            ),
             const SizedBox(height: 12),
-            ActionButton(label: 'Fly To Home City', onPressed: () {}),
+
+            ActionButton(
+              label: 'Fly To Home City',
+              onPressed: () => _runAction(() async {
+                await _lgService!.flyTo(
+                  lat: 18.5204, // Pune
+                  lon: 73.8567,
+                );
+              }),
+            ),
             const SizedBox(height: 12),
-            ActionButton(label: 'Clear Logos', onPressed: () {}),
+
+            ActionButton(
+              label: 'Clear Logos',
+              onPressed: () => _runAction(() async => _lgService!.clearLogos()),
+            ),
             const SizedBox(height: 12),
-            ActionButton(label: 'Clear KMLs', onPressed: () {}),
+
+            ActionButton(
+              label: 'Clear KMLs',
+              onPressed: () => _runAction(() async => _lgService!.clearKmls()),
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              _connected ? 'Status: Connected' : 'Status: Not connected',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _connected ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),

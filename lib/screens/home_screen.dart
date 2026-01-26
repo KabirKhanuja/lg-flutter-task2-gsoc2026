@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _lgService = LgSshService(config);
 
-      await _lgService!.connect().timeout(const Duration(seconds: 6));
+      await _lgService!.connect().timeout(const Duration(seconds: 2));
 
       if (!mounted) return;
       setState(() => _status = LgStatus.connected);

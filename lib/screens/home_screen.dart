@@ -3,6 +3,7 @@ import '../widgets/action_button.dart';
 import '../settings/lg_config_storage.dart';
 import '../services/lg_ssh_service.dart';
 import 'package:flutter/services.dart';
+import '../settings/settings_screen.dart';
 
 enum LgStatus { connecting, connected, disconnected }
 
@@ -119,6 +120,16 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Liquid Galaxy Controller'),
         centerTitle: true,
       ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Settings',
+        onPressed: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+        },
+        child: const Icon(Icons.settings),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

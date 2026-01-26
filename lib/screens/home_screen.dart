@@ -64,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             ActionButton(
               label: 'Send Pyramid KML',
+              enabled: _connected,
               onPressed: () => _runAction(() async {
                 const pyramidKml = '''
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -114,13 +115,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 24),
 
-            Text(
-              _connected ? 'Status: Connected' : 'Status: Not connected',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _connected ? Colors.green : Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.circle,
+                  color: _connected ? Colors.green : Colors.red,
+                  size: 12,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _connected ? 'LG Connected' : 'LG Not Connected',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
           ],
         ),

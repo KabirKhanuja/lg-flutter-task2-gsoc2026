@@ -19,6 +19,8 @@ class LgSshService {
       username: config.username,
       onPasswordRequest: () => config.password,
     );
+
+    await _exec('echo connected');
   }
 
   // for disconnecting
@@ -43,6 +45,7 @@ class LgSshService {
   // to clear all KMLs
   Future<void> clearKmls() async {
     await _exec("echo '' > /var/www/html/kmls.txt");
+    await _exec("echo 'refresh' > /var/www/html/kmls.txt");
   }
 
   // to clear all logos

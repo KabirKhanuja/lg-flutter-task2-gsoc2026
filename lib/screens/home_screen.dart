@@ -11,7 +11,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  LgService? _lgService;
+  LgSshService? _lgService;
   bool _connected = false;
 
   Future<void> _ensureConnected() async {
@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
       throw Exception('LG configuration not found. Please set it first.');
     }
 
-    _lgService = LgService(config);
+    _lgService = LgSshService(config);
     await _lgService!.connect();
 
     setState(() {
@@ -57,9 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ActionButton(
               label: 'Show LG Logo',
               onPressed: () => _runAction(() async {
-                await _lgService!.sendCommand(
-                  'echo "logo=https://liquidgalaxy.eu/logo.png" > /var/www/html/logos.txt',
-                );
+                await _lgService!.sendLogo('https://liquidgalaxy.eu/logo.png');
               }),
             ),
             const SizedBox(height: 12),
@@ -96,8 +94,8 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Fly To Home City',
               onPressed: () => _runAction(() async {
                 await _lgService!.flyTo(
-                  lat: 18.5204, // Pune
-                  lon: 73.8567,
+                  latitude: 18.5204, // Pune
+                  longitude: 73.8567,
                 );
               }),
             ),

@@ -46,6 +46,10 @@ class LgSshService {
     await _exec("echo '' > /var/www/html/logos.txt");
   }
 
+  Future<void> sendLogo(String logoUrl) async {
+    await _exec("echo \"logo=$logoUrl\" > /var/www/html/logos.txt");
+  }
+
   // to send KML content
   Future<void> sendKml(String kmlContent) async {
     final encoded = base64Encode(utf8.encode(kmlContent));

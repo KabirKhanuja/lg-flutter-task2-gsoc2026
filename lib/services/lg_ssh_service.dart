@@ -102,24 +102,27 @@ class LgSshService {
     final sftp = await _client!.sftp();
 
     final remoteKml = await sftp.open(
-      '/var/www/html/pyramid.kml',
+      '/var/www/html/kml/master.kml',
       mode:
           SftpFileOpenMode.create |
           SftpFileOpenMode.truncate |
           SftpFileOpenMode.write,
     );
+
     await remoteKml.write(kmlFile.openRead().cast());
     await remoteKml.close();
-
-    await _exec(
-      "printf \"http://lg1:81/pyramid.kml\" > /var/www/html/kmls.txt",
-    );
   }
 
   Future<void> clearPyramid() async {
-    await _exec("printf \"\" > /var/www/html/kmls.txt");
+    await _exec("""
+cat << 'EOF' > /var/www/html/kml/master.kml
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document></Document>
+</kml>
+EOF
+""");
   }
-
   // for the logo
 
   Future<void> showLogo({required int screen, required String imageUrl}) async {

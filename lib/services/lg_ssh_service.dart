@@ -8,7 +8,8 @@ class LgSshService {
 
   LgSshService(this.config);
 
-  // connecting to the lg master
+  // connection logic
+
   Future<void> connect() async {
     if (_client != null) return;
 
@@ -23,7 +24,6 @@ class LgSshService {
     await _exec('echo connected');
   }
 
-  // for disconnecting
   Future<void> disconnect() async {
     _client?.close();
     _client = null;
@@ -42,52 +42,30 @@ class LgSshService {
     return value.replaceAll("'", "'\"'\"'");
   }
 
-  // to clear all KMLs
-  Future<void> clearKmls() async {
-    await _exec("echo '' > /var/www/html/kml/slave_1.kml");
-  }
-
-  // to clear all logos
-  Future<void> clearLogos() async {
-    await _exec("echo '' > /var/www/html/kml/logos.kml");
-  }
+  // logos
 
   Future<void> sendLogo(String imageUrl) async {
-    final kml =
-        '''
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-<Document>
-  <ScreenOverlay>
-    <name>LG Logo</name>
-    <Icon>
-      <href>$imageUrl</href>
-    </Icon>
-    <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
-    <screenXY x="0.05" y="0.95" xunits="fraction" yunits="fraction"/>
-    <size x="0.2" y="0.2" xunits="fraction" yunits="fraction"/>
-  </ScreenOverlay>
-</Document>
-</kml>
-''';
-
-    final encoded = base64Encode(utf8.encode(kml));
-    await _exec(
-      "echo '$encoded' | base64 --decode > /var/www/html/kml/logos.kml",
-    );
+    final safeUrl = _shellEscapeSingleQuotes(imageUrl);
+    await _exec("echo 'logo=$safeUrl' > /var/www/html/logos.txt");
   }
 
-  // to send KML content
+  Future<void> clearLogos() async {
+    await _exec("echo '' > /var/www/html/logos.txt");
+  }
+
+  // kmls
+
   Future<void> sendKml(String kmlContent) async {
     final encoded = base64Encode(utf8.encode(kmlContent));
-
-    // await _exec("echo '$encoded' | base64 --decode > /var/www/html/kmls.txt");
-    await _exec(
-      "echo '$encoded' | base64 --decode > /var/www/html/kml/slave_1.kml",
-    );
+    await _exec("echo '$encoded' | base64 --decode > /var/www/html/kmls.txt");
   }
 
-  // flying to a location
+  Future<void> clearKmls() async {
+    await _exec("echo '' > /var/www/html/kmls.txt");
+  }
+
+  // fly to
+
   Future<void> flyTo({
     required double latitude,
     required double longitude,

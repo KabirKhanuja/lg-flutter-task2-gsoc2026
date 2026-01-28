@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 import '../settings/lg_connection_config.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 bool _busy = false;
 
@@ -10,7 +12,7 @@ class LgSshService {
 
   LgSshService(this.config);
 
-  // connection logic
+  // connections logic
 
   Future<void> connect() async {
     try {
@@ -33,9 +35,11 @@ class LgSshService {
       await session.done;
 
       _client = client;
+      print('LG SSH CONNECTED');
     } catch (e) {
       _client?.close();
       _client = null;
+      print('LG SSH CONNECTION FAILED: $e');
       rethrow;
     }
   }
@@ -46,6 +50,8 @@ class LgSshService {
   }
 
   Future<void> _exec(String command) async {
+    print('🛰️ SSH >>> $command');
+
     while (_busy) {
       await Future.delayed(const Duration(milliseconds: 50));
     }
@@ -58,29 +64,37 @@ class LgSshService {
       }
 
       final session = await _client!.execute(command);
-      await session.done;
-    } catch (e) {
-      _client?.close();
-      _client = null;
 
-      await connect();
+      final stdout = await session.stdout
+          .map((Uint8List data) => utf8.decode(data))
+          .join();
 
-      final session = await _client!.execute(command);
+      final stderr = await session.stderr
+          .map((Uint8List data) => utf8.decode(data))
+          .join();
+
       await session.done;
+
+      if (stdout.trim().isNotEmpty) {
+        print('✅ STDOUT:\n$stdout');
+      }
+      if (stderr.trim().isNotEmpty) {
+        print('❌ STDERR:\n$stderr');
+      }
     } finally {
       _busy = false;
     }
   }
 
-  // flying home
+  // flying homeee
 
   Future<void> flyTo(double lat, double lon) async {
     await _exec("echo 'search=$lat,$lon' > /tmp/query.txt");
   }
 
-  // for kml
+  // pyramid logic
 
-  Future<void> uploadKml(File kmlFile, String name) async {
+  Future<void> uploadAndRunPyramid(File kmlFile) async {
     if (_client == null) {
       throw Exception('LG SSH not connected');
     }
@@ -88,7 +102,7 @@ class LgSshService {
     final sftp = await _client!.sftp();
 
     final remoteFile = await sftp.open(
-      '/var/www/html/$name.kml',
+      '/var/www/html/pyramid.kml',
       mode:
           SftpFileOpenMode.create |
           SftpFileOpenMode.truncate |
@@ -97,17 +111,15 @@ class LgSshService {
 
     await remoteFile.write(kmlFile.openRead().cast());
     await remoteFile.close();
+
+    await _exec("echo 'http://lg1:81/pyramid.kml' > /var/www/html/kmls.txt");
   }
 
-  Future<void> runKml(String name) async {
-    await _exec("echo '\nhttp://lg1:81/$name.kml' > /var/www/html/kmls.txt");
-  }
-
-  Future<void> clearKml() async {
+  Future<void> clearPyramid() async {
     await _exec("echo '' > /var/www/html/kmls.txt");
   }
 
-  // logo
+  // for the logo
 
   Future<void> showLogo({required int screen, required String imageUrl}) async {
     final logoKml =
@@ -140,28 +152,5 @@ class LgSshService {
 ''';
 
     await _exec("echo '$emptyKml' > /var/www/html/kml/slave_$screen.kml");
-  }
-
-  Future<void> sendKml(String kmlContent) async {
-    await _exec(
-      "cat << 'EOF' > /var/www/html/kml/slave_1.kml\n"
-      "$kmlContent\n"
-      "EOF",
-    );
-  }
-
-  Future<void> clearPyramid() async {
-    const emptyKml = '''
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-<Document></Document>
-</kml>
-''';
-
-    await _exec(
-      "cat << 'EOF' > /var/www/html/kml/slave_1.kml\n"
-      "$emptyKml\n"
-      "EOF",
-    );
   }
 }

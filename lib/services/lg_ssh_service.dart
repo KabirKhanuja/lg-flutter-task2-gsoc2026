@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 import '../settings/lg_connection_config.dart';
 
+bool _busy = false;
+
 class LgSshService {
   final LgConnectionConfig config;
   SSHClient? _client;
@@ -44,13 +46,20 @@ class LgSshService {
   }
 
   Future<void> _exec(String command) async {
+    while (_busy) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+
+    _busy = true;
+
     try {
       if (_client == null) {
         await connect();
       }
+
       final session = await _client!.execute(command);
       await session.done;
-    } catch (_) {
+    } catch (e) {
       _client?.close();
       _client = null;
 
@@ -58,6 +67,8 @@ class LgSshService {
 
       final session = await _client!.execute(command);
       await session.done;
+    } finally {
+      _busy = false;
     }
   }
 

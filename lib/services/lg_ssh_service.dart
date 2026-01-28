@@ -143,13 +143,11 @@ class LgSshService {
   }
 
   Future<void> sendKml(String kmlContent) async {
-    for (int screen = 1; screen <= 3; screen++) {
-      await _exec(
-        "cat << 'EOF' > /var/www/html/kml/slave_$screen.kml\n"
-        "$kmlContent\n"
-        "EOF",
-      );
-    }
+    await _exec(
+      "cat << 'EOF' > /var/www/html/kml/slave_1.kml\n"
+      "$kmlContent\n"
+      "EOF",
+    );
   }
 
   Future<void> clearPyramid() async {
@@ -160,12 +158,10 @@ class LgSshService {
 </kml>
 ''';
 
-    for (int screen = 1; screen <= 3; screen++) {
-      await _exec(
-        "cat << 'EOF' > /var/www/html/kml/slave_$screen.kml\n"
-        "$emptyKml\n"
-        "EOF",
-      );
-    }
+    await _exec(
+      "cat << 'EOF' > /var/www/html/kml/slave_1.kml\n"
+      "$emptyKml\n"
+      "EOF",
+    );
   }
 }

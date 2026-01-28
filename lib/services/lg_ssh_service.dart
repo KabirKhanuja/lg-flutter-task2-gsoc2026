@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 import '../settings/lg_connection_config.dart';
 import 'dart:convert';
@@ -93,6 +92,26 @@ class LgSshService {
   }
 
   // pyramid logic
+
+  // uploads dae as well
+  Future<void> uploadModelFile(Uint8List modelData, String fileName) async {
+    if (_client == null) throw Exception('LG not connected');
+
+    final sftp = await _client!.sftp();
+
+    final file = await sftp.open(
+      '/var/www/html/$fileName',
+      mode:
+          SftpFileOpenMode.create |
+          SftpFileOpenMode.truncate |
+          SftpFileOpenMode.write,
+    );
+
+    await file.write(Stream.value(modelData));
+    await file.close();
+
+    print('Uploaded model file: $fileName');
+  }
 
   Future<void> showPyramid(String kmlContent) async {
     if (_client == null) throw Exception('LG not connected');

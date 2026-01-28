@@ -4,7 +4,6 @@ import '../settings/lg_config_storage.dart';
 import '../services/lg_ssh_service.dart';
 import '../settings/settings_screen.dart';
 import '../services/kml/kml_loader.dart';
-import 'dart:io';
 
 enum LgStatus { connecting, connected, disconnected }
 
@@ -150,6 +149,11 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Send Pyramid KML',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
+                // first uploading the dae in lg
+                final modelData = await KmlLoader.loadPyramidModel();
+                await _lgService!.uploadModelFile(modelData, 'model_1.dae');
+
+                // then uploading the kml
                 final kmlString = await KmlLoader.loadPyramidKml();
                 await _lgService!.showPyramid(kmlString);
               }),

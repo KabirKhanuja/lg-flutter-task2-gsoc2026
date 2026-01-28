@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'lg_config_storage.dart';
 import 'lg_connection_config.dart';
+import '../screens/home_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final LgStatus connectionStatus;
+  final Future<void> Function() onRefreshConnection;
+  
+  const SettingsScreen({
+    super.key,
+    required this.connectionStatus,
+    required this.onRefreshConnection,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -16,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _passwordController = TextEditingController();
 
   LgConnectionConfig? config;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -110,14 +119,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 24),
 
-            if (config != null)
+            if (config != null) ...[
               Text(
-                'Status: Not connected',
+                widget.connectionStatus == LgStatus.connected
+                    ? 'Status: Connected'
+                    : widget.connectionStatus == LgStatus.connecting
+                        ? 'Status: Connecting...'
+                        : 'Status: Not connected',
                 style: TextStyle(
-                  color: Colors.red.shade700,
+                  color: widget.connectionStatus == LgStatus.connected
+                      ? Colors.green.shade700
+                      : widget.connectionStatus == LgStatus.connecting
+                          ? Colors.orange.shade700
+                          : Colors.red.shade700,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _isRefreshing ? null : () async {
+                  setState(() => _isRefreshing = true);
+                  try {
+                    await widget.onRefreshConnection();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Connection refreshed')),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Connection failed: $e')),
+                      );
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isRefreshing = false);
+                  }
+                },
+                icon: _isRefreshing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                label: Text(_isRefreshing ? 'Testing...' : 'Test Connection'),
+              ),
+            ],
           ],
         ),
       ),

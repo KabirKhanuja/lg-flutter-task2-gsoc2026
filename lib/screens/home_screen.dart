@@ -120,7 +120,19 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           Navigator.of(
             context,
-          ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+          ).push(MaterialPageRoute(
+            builder: (_) => SettingsScreen(
+              connectionStatus: _status,
+              onRefreshConnection: () async {
+                // Force reload by disconnecting and clearing service
+                _lgService?.disconnect();
+                _lgService = null;
+                setState(() => _status = LgStatus.disconnected);
+                // Now reconnect with fresh config from storage
+                await _ensureConnected();
+              },
+            ),
+          ));
         },
         child: const Icon(Icons.settings),
       ),

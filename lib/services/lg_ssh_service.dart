@@ -94,28 +94,31 @@ class LgSshService {
 
   // pyramid logic
 
-  Future<void> showPyramid(String kmlContent) async {
-    await _exec("""
-cat << 'EOF' > /var/www/html/kml/slave_1.kml
-$kmlContent
-EOF
-""");
+  Future<void> showPyramid(File kmlFile) async {
+    if (_client == null) {
+      throw Exception('LG SSH not connected');
+    }
+
+    final sftp = await _client!.sftp();
+
+    final remoteKml = await sftp.open(
+      '/var/www/html/pyramid.kml',
+      mode:
+          SftpFileOpenMode.create |
+          SftpFileOpenMode.truncate |
+          SftpFileOpenMode.write,
+    );
+    await remoteKml.write(kmlFile.openRead().cast());
+    await remoteKml.close();
+
+    await _exec(
+      "printf \"http://lg1:81/pyramid.kml\" > /var/www/html/kmls.txt",
+    );
   }
 
-  //   Future<void> clearPyramid() async {
-  //     const emptyKml = '''
-  // <?xml version="1.0" encoding="UTF-8"?>
-  // <kml xmlns="http://www.opengis.net/kml/2.2">
-  // <Document></Document>
-  // </kml>
-  // ''';
-
-  //     await _exec(
-  //       "cat << 'EOF' > /var/www/html/kml/slave_1.kml\n"
-  //       "$emptyKml\n"
-  //       "EOF",
-  //     );
-  //   }
+  Future<void> clearPyramid() async {
+    await _exec("printf \"\" > /var/www/html/kmls.txt");
+  }
 
   // for the logo
 

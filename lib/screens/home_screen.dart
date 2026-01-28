@@ -77,13 +77,11 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       _lgService = LgSshService(config);
-
       await _lgService!.connect().timeout(const Duration(seconds: 2));
 
       if (!mounted) return;
       setState(() => _status = LgStatus.connected);
     } catch (e) {
-      // loading
       final elapsed = DateTime.now().difference(attemptStart);
       final remaining = const Duration(seconds: 2) - elapsed;
       if (remaining > Duration.zero) {
@@ -99,11 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await _ensureConnected();
 
-      if (_lgService == null) {
-        throw Exception('LG service not initialized');
-      }
-
-      if (_status != LgStatus.connected) return;
+      if (_lgService == null || _status != LgStatus.connected) return;
       await action();
     } catch (e) {
       if (mounted) {
@@ -137,6 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            /// LOGO
             ActionButton(
               label: 'Show LG Logo',
               enabled: _isConnected,
@@ -148,27 +143,38 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }),
             ),
+
             const SizedBox(height: 12),
 
+            /// PYRAMID (CORRECT LG FLOW)
             ActionButton(
               label: 'Send Pyramid KML',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                final kml = await KmlLoader.loadPyramidKml();
-                await _lgService!.showPyramid(kml);
+                final kmlString = await KmlLoader.loadPyramidKml();
+
+                final tempDir = await Directory.systemTemp.createTemp();
+                final kmlFile = File('${tempDir.path}/pyramid.kml');
+                await kmlFile.writeAsString(kmlString);
+
+                await _lgService!.showPyramid(kmlFile);
               }),
             ),
+
             const SizedBox(height: 12),
 
+            /// FLY TO
             ActionButton(
               label: 'Fly To Home City',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                await _lgService!.flyTo(18.5204, 73.8567); //pune
+                await _lgService!.flyTo(18.5204, 73.8567); // Pune
               }),
             ),
+
             const SizedBox(height: 12),
 
+            /// CLEAR LOGO
             ActionButton(
               label: 'Clear Logos',
               enabled: _isConnected,
@@ -176,15 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 await _lgService!.clearLogo(3);
               }),
             ),
-            const SizedBox(height: 12),
 
-            // ActionButton(
-            //   label: 'Clear Pyramid',
-            //   enabled: _isConnected,
-            //   onPressed: () => _runAction(() async {
-            //     await _lgService!.clearPyramid();
-            //   }),
-            // ),
             const SizedBox(height: 24),
             _statusWidget(),
           ],

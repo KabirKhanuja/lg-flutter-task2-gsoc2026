@@ -133,12 +133,31 @@ class LgSshService {
     await file.write(Stream.value(Uint8List.fromList(utf8.encode(kmlContent))));
     await file.close();
 
-    // trigger LG (THIS is the key)
-    await _exec('echo "http://lg1:81/$fileName" > /var/www/html/kmls.txt');
+    // Use query.txt to load the KML (better for placemarks)
+    await _exec('echo "http://lg1:81/$fileName" > /tmp/query.txt');
   }
 
   Future<void> clearPyramid() async {
-    await _exec('> /var/www/html/kmls.txt');
+    if (_client == null) throw Exception('LG not connected');
+
+    const emptyKml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+</Document>
+</kml>''';
+
+    final fileName = 'clear_${DateTime.now().millisecondsSinceEpoch}.kml';
+    final sftp = await _client!.sftp();
+
+    final file = await sftp.open(
+      '/var/www/html/$fileName',
+      mode: SftpFileOpenMode.create | SftpFileOpenMode.truncate | SftpFileOpenMode.write,
+    );
+
+    await file.write(Stream.value(Uint8List.fromList(utf8.encode(emptyKml))));
+    await file.close();
+
+    await _exec('echo "http://lg1:81/$fileName" > /tmp/query.txt');
   }
   // for the logo
 

@@ -116,30 +116,58 @@ class LgSshService {
   Future<void> showPyramid(String kmlContent) async {
     if (_client == null) throw Exception('LG not connected');
 
-    final fileName = 'master.kml';
-
     final sftp = await _client!.sftp();
 
     final file = await sftp.open(
-      '/var/www/html/$fileName',
+      '/var/www/html/kml/master.kml',
       mode:
           SftpFileOpenMode.create |
           SftpFileOpenMode.truncate |
           SftpFileOpenMode.write,
     );
 
-    // write KML
-    await file.write(Stream.value(Uint8List.fromList(utf8.encode(kmlContent))));
+    await file.write(
+      Stream.value(Uint8List.fromList(utf8.encode(kmlContent))),
+    );
     await file.close();
 
-    // Use query.txt to load the KML (better for placemarks)
-    await _exec('echo "http://lg1:81/$fileName" > /tmp/query.txt');
+    await _exec(
+      'echo "exittour=true" > /tmp/query.txt && '
+      'echo "http://lg1:81//kml/master.kml" > /tmp/query.txt',
+    );
+
+    print('Pyramid shown');
   }
 
   Future<void> clearPyramid() async {
-    // Delete the master.kml file and clear query.txt
-    await _exec('rm -f /var/www/html/master.kml');
-    await _exec('echo "" > /tmp/query.txt');
+    const emptyKml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document></Document>
+</kml>''';
+
+    if (_client == null) throw Exception('LG not connected');
+
+    final sftp = await _client!.sftp();
+
+    final file = await sftp.open(
+      '/var/www/html/kml/master.kml',
+      mode:
+          SftpFileOpenMode.create |
+          SftpFileOpenMode.truncate |
+          SftpFileOpenMode.write,
+    );
+
+    await file.write(
+      Stream.value(Uint8List.fromList(utf8.encode(emptyKml))),
+    );
+    await file.close();
+
+    await _exec(
+      'echo "exittour=true" > /tmp/query.txt && '
+      'echo "http://lg1:81//kml/master.kml" > /tmp/query.txt',
+    );
+
+    print('Pyramid cleared');
   }
   // for the logo
 

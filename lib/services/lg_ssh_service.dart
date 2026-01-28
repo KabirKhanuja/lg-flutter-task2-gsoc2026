@@ -94,34 +94,32 @@ class LgSshService {
 
   // pyramid logic
 
-  Future<void> showPyramid(File kmlFile) async {
-    if (_client == null) {
-      throw Exception('LG SSH not connected');
-    }
+  Future<void> showPyramid(String kmlContent) async {
+    if (_client == null) throw Exception('LG not connected');
+
+    final random = DateTime.now().millisecondsSinceEpoch;
+    final fileName = 'pyramid_$random.kml';
 
     final sftp = await _client!.sftp();
 
-    final remoteKml = await sftp.open(
-      '/var/www/html/kml/master.kml',
+    final file = await sftp.open(
+      '/var/www/html/$fileName',
       mode:
           SftpFileOpenMode.create |
           SftpFileOpenMode.truncate |
           SftpFileOpenMode.write,
     );
 
-    await remoteKml.write(kmlFile.openRead().cast());
-    await remoteKml.close();
+    // write KML
+    await file.write(Stream.value(Uint8List.fromList(utf8.encode(kmlContent))));
+    await file.close();
+
+    // trigger LG (THIS is the key)
+    await _exec('echo "http://lg1:81/$fileName" > /var/www/html/kmls.txt');
   }
 
   Future<void> clearPyramid() async {
-    await _exec("""
-cat << 'EOF' > /var/www/html/kml/master.kml
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-<Document></Document>
-</kml>
-EOF
-""");
+    await _exec('> /var/www/html/kmls.txt');
   }
   // for the logo
 

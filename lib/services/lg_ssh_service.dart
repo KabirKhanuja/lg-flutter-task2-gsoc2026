@@ -44,25 +44,47 @@ class LgSshService {
 
   // to clear all KMLs
   Future<void> clearKmls() async {
-    await _exec("echo '' > /var/www/html/kmls.txt");
-    await _exec("echo 'refresh' > /var/www/html/kmls.txt");
+    await _exec("echo '' > /var/www/html/kml/slave_1.kml");
   }
 
   // to clear all logos
   Future<void> clearLogos() async {
-    await _exec("echo '' > /var/www/html/logos.txt");
+    await _exec("echo '' > /var/www/html/kml/logos.kml");
   }
 
-  Future<void> sendLogo(String logoUrl) async {
-    final safeUrl = _shellEscapeSingleQuotes(logoUrl);
-    await _exec("echo 'logo=$safeUrl' > /var/www/html/logos.txt");
+  Future<void> sendLogo(String imageUrl) async {
+    final kml =
+        '''
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <ScreenOverlay>
+    <name>LG Logo</name>
+    <Icon>
+      <href>$imageUrl</href>
+    </Icon>
+    <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
+    <screenXY x="0.05" y="0.95" xunits="fraction" yunits="fraction"/>
+    <size x="0.2" y="0.2" xunits="fraction" yunits="fraction"/>
+  </ScreenOverlay>
+</Document>
+</kml>
+''';
+
+    final encoded = base64Encode(utf8.encode(kml));
+    await _exec(
+      "echo '$encoded' | base64 --decode > /var/www/html/kml/logos.kml",
+    );
   }
 
   // to send KML content
   Future<void> sendKml(String kmlContent) async {
     final encoded = base64Encode(utf8.encode(kmlContent));
 
-    await _exec("echo '$encoded' | base64 --decode > /var/www/html/kmls.txt");
+    // await _exec("echo '$encoded' | base64 --decode > /var/www/html/kmls.txt");
+    await _exec(
+      "echo '$encoded' | base64 --decode > /var/www/html/kml/slave_1.kml",
+    );
   }
 
   // flying to a location

@@ -131,7 +131,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            /// LOGO
             ActionButton(
               label: 'Show LG Logo',
               enabled: _isConnected,
@@ -146,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 12),
 
-            /// PYRAMID (CORRECT LG FLOW)
+            // pyramid
             ActionButton(
               label: 'Send Pyramid KML',
               enabled: _isConnected,
@@ -163,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 12),
 
-            /// FLY TO
+            // fly to
             ActionButton(
               label: 'Fly To Home City',
               enabled: _isConnected,
@@ -174,12 +173,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 12),
 
-            /// CLEAR LOGO
+            // logo
             ActionButton(
               label: 'Clear Logos',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
                 await _lgService!.clearLogo(3);
+              }),
+            ),
+
+            const SizedBox(height: 12),
+
+            ActionButton(
+              label: 'Clear KMLs',
+              enabled: _isConnected,
+              onPressed: () => _runAction(() async {
+                await _lgService!.clearPyramid();
               }),
             ),
 

@@ -4,6 +4,8 @@
      xmlns:kml="http://www.opengis.net/kml/2.2"
      xmlns:atom="http://www.w3.org/2005/Atom">
 
+<Document>
+
 <Placemark>
     <name>Placemark model</name>
     <description>Placemark model</description>
@@ -28,7 +30,7 @@
         </Scale>
 
         <Link>
-            <href>model_1.dae</href>
+            <href>http://lg1:81/model_1.dae</href>
         </Link>
 
         <ResourceMap>
@@ -39,5 +41,7 @@
         href="https://www.google.com/earth/about/versions/#earth-pro"
         title="Google Earth Pro 7.3.6.10441"/>
 </Placemark>
+
+</Document>
 
 </kml>

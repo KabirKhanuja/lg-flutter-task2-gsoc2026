@@ -1,30 +1,88 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
-<Placemark>
-	<name>Placemark model</name>
-	<description>Placemark model</description>
-	<Model id="model_1">
-	<Location>
-	<longitude>73.7971</longitude>
-	<latitude>18.4888</latitude>
-	<altitude>80</altitude>
-	</Location>
-		<Orientation>
-			<heading>0</heading>
-			<tilt>0</tilt>
-			<roll>0</roll>
-		</Orientation>
-		<Scale>
-			<x>1</x>
-			<y>1</y>
-			<z>1</z>
-		</Scale>
-		<Link>
-			<href>model_0.dae</href>
-		</Link>
-		<ResourceMap>
-		</ResourceMap>
-	</Model>
-	<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.6.10441"></atom:link>
-</Placemark>
+<kml xmlns="http://www.opengis.net/kml/2.2"
+     xmlns:gx="http://www.google.com/kml/ext/2.2">
+<Document>
+  <name>3D Pyramid (Pure KML)</name>
+
+  <Style id="pyramidStyle">
+    <PolyStyle>
+      <color>cc00ccff</color> 
+      <outline>1</outline>
+    </PolyStyle>
+    <LineStyle>
+      <color>ff000000</color>
+      <width>2</width>
+    </LineStyle>
+  </Style>
+
+  <Placemark>
+    <name>Pyramid</name>
+    <styleUrl>#pyramidStyle</styleUrl>
+
+    <MultiGeometry>
+
+      <Polygon>
+        <extrude>1</extrude>
+        <altitudeMode>absolute</altitudeMode>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              73.7968,18.4885,80
+              73.7974,18.4885,80
+              73.7971,18.4888,300
+              73.7968,18.4885,80
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+
+      <Polygon>
+        <extrude>1</extrude>
+        <altitudeMode>absolute</altitudeMode>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              73.7974,18.4885,80
+              73.7974,18.4891,80
+              73.7971,18.4888,300
+              73.7974,18.4885,80
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+
+      <Polygon>
+        <extrude>1</extrude>
+        <altitudeMode>absolute</altitudeMode>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              73.7974,18.4891,80
+              73.7968,18.4891,80
+              73.7971,18.4888,300
+              73.7974,18.4891,80
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+
+      <Polygon>
+        <extrude>1</extrude>
+        <altitudeMode>absolute</altitudeMode>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              73.7968,18.4891,80
+              73.7968,18.4885,80
+              73.7971,18.4888,300
+              73.7968,18.4891,80
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+
+    </MultiGeometry>
+  </Placemark>
+
+</Document>
 </kml>

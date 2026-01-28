@@ -64,7 +64,7 @@ flutter:
 
   assets:
     - assets/kml/pyramid.kml
-    - assets/kmz/model_0.dae
+    #- assets/kmz/model_0.dae
 
   # To add assets to your application, add an assets section, like this:
   # assets:

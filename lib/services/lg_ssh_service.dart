@@ -112,11 +112,13 @@ class LgSshService {
     await remoteFile.write(kmlFile.openRead().cast());
     await remoteFile.close();
 
-    await _exec("echo 'http://lg1:81/pyramid.kml' > /var/www/html/kmls.txt");
+    await _exec(
+      "printf \"http://lg1:81/pyramid.kml\" > /var/www/html/kmls.txt",
+    );
   }
 
   Future<void> clearPyramid() async {
-    await _exec("echo '' > /var/www/html/kmls.txt");
+    await _exec("printf \"\" > /var/www/html/kmls.txt");
   }
 
   // for the logo

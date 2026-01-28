@@ -155,12 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
                 final kmlString = await KmlLoader.loadPyramidKml();
-
-                final tempDir = await Directory.systemTemp.createTemp();
-                final file = File('${tempDir.path}/pyramid.kml');
-                await file.writeAsString(kmlString);
-
-                await _lgService!.uploadAndRunPyramid(file);
+                await _lgService!.showPyramid(kmlString);
               }),
             ),
             const SizedBox(height: 12),

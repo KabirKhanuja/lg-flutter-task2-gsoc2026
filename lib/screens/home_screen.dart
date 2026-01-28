@@ -4,6 +4,7 @@ import '../settings/lg_config_storage.dart';
 import '../services/lg_ssh_service.dart';
 import '../settings/settings_screen.dart';
 import '../services/kml/kml_loader.dart';
+import 'dart:io';
 
 enum LgStatus { connecting, connected, disconnected }
 
@@ -140,8 +141,10 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Show LG Logo',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                await _lgService!.sendLogo(
-                  'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgXmdNgBTXup6bdWew5RzgCmC9pPb7rK487CpiscWB2S8OlhwFHmeeACHIIjx4B5-Iv-t95mNUx0JhB_oATG3-Tq1gs8Uj0-Xb9Njye6rHtKKsnJQJlzZqJxMDnj_2TXX3eA5x6VSgc8aw/s320-rw/LOGO+LIQUID+GALAXY-sq1000-+OKnoline.png',
+                await _lgService!.showLogo(
+                  screen: 3,
+                  imageUrl:
+                      'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgXmdNgBTXup6bdWew5RzgCmC9pPb7rK487CpiscWB2S8OlhwFHmeeACHIIjx4B5-Iv-t95mNUx0JhB_oATG3-Tq1gs8Uj0-Xb9Njye6rHtKKsnJQJlzZqJxMDnj_2TXX3eA5x6VSgc8aw/s320-rw/LOGO+LIQUID+GALAXY-sq1000-+OKnoline.png',
                 );
               }),
             ),
@@ -151,8 +154,15 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Send Pyramid KML',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                final kmlContent = await KmlLoader.loadPyramidKml();
-                await _lgService!.sendKml(kmlContent);
+                final kmlString = await KmlLoader.loadPyramidKml();
+
+                // write temp file
+                final tempDir = await Directory.systemTemp.createTemp();
+                final file = File('${tempDir.path}/pyramid.kml');
+                await file.writeAsString(kmlString);
+
+                await _lgService!.uploadKml(file, 'pyramid');
+                await _lgService!.runKml('pyramid');
               }),
             ),
             const SizedBox(height: 12),
@@ -161,11 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Fly To Home City',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                await _lgService!.flyTo(
-                  // this is for pune
-                  latitude: 18.5204,
-                  longitude: 73.8567,
-                );
+                await _lgService!.flyTo(18.5204, 73.8567); //pune
               }),
             ),
             const SizedBox(height: 12),
@@ -174,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Clear Logos',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                await _lgService!.clearLogos();
+                await _lgService!.clearLogo(3);
               }),
             ),
             const SizedBox(height: 12),
@@ -183,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Clear KMLs',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                await _lgService!.clearKmls();
+                await _lgService!.clearKml();
               }),
             ),
 

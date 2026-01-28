@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 import '../settings/lg_connection_config.dart';
 
@@ -24,8 +24,6 @@ class LgSshService {
       username: config.username,
       onPasswordRequest: () => config.password,
     );
-
-    await _exec('echo LG_CONNECTED');
   }
 
   Future<void> disconnect() async {
@@ -37,15 +35,49 @@ class LgSshService {
     if (_client == null) {
       throw Exception('LG SSH not connected');
     }
-
     final session = await _client!.execute(command);
     await session.done;
   }
 
+  // flying home
+
+  Future<void> flyTo(double lat, double lon) async {
+    await _exec("echo 'search=$lat,$lon' > /tmp/query.txt");
+  }
+
+  // for kml
+
+  Future<void> uploadKml(File kmlFile, String name) async {
+    if (_client == null) {
+      throw Exception('LG SSH not connected');
+    }
+
+    final sftp = await _client!.sftp();
+
+    final remoteFile = await sftp.open(
+      '/var/www/html/$name.kml',
+      mode:
+          SftpFileOpenMode.create |
+          SftpFileOpenMode.truncate |
+          SftpFileOpenMode.write,
+    );
+
+    await remoteFile.write(kmlFile.openRead().cast());
+    await remoteFile.close();
+  }
+
+  Future<void> runKml(String name) async {
+    await _exec("echo '\nhttp://lg1:81/$name.kml' > /var/www/html/kmls.txt");
+  }
+
+  Future<void> clearKml() async {
+    await _exec("echo '' > /var/www/html/kmls.txt");
+  }
+
   // logo
 
-  Future<void> sendLogo(String imageUrl) async {
-    final kml =
+  Future<void> showLogo({required int screen, required String imageUrl}) async {
+    final logoKml =
         '''
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -56,68 +88,24 @@ class LgSshService {
       <href>$imageUrl</href>
     </Icon>
     <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
-    <screenXY x="0.05" y="0.95" xunits="fraction" yunits="fraction"/>
-    <size x="240" y="160" xunits="pixels" yunits="pixels"/>
+    <screenXY x="0.02" y="0.95" xunits="fraction" yunits="fraction"/>
+    <size x="0.25" y="0.25" xunits="fraction" yunits="fraction"/>
   </ScreenOverlay>
 </Document>
 </kml>
 ''';
 
-    final encoded = base64Encode(utf8.encode(kml));
-    await _exec(
-      "echo '$encoded' | base64 --decode > /var/www/html/kml/slave_3.kml",
-    );
+    await _exec("echo '$logoKml' > /var/www/html/kml/slave_$screen.kml");
   }
 
-  Future<void> clearLogos() async {
-    await _exec("echo '' > /var/www/html/kml/slave_3.kml");
-  }
-
-  // kml
-
-  Future<void> sendKml(String kmlContent) async {
-    final encoded = base64Encode(utf8.encode(kmlContent));
-    await _exec(
-      "echo '$encoded' | base64 --decode > /var/www/html/kml/master.kml",
-    );
-  }
-
-  Future<void> clearKmls() async {
-    await _exec("echo '' > /var/www/html/kml/master.kml");
-    await _exec("echo '' > /var/www/html/kml/slave_2.kml");
-    await _exec("echo '' > /var/www/html/kml/slave_3.kml");
-  }
-
-  // fly home
-
-  Future<void> flyTo({
-    required double latitude,
-    required double longitude,
-    double altitude = 5000,
-    double tilt = 45,
-    double heading = 0,
-    double range = 1000,
-  }) async {
-    final flyToKml =
-        '''
+  Future<void> clearLogo(int screen) async {
+    const emptyKml = '''
 <?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2"
-     xmlns:gx="http://www.google.com/kml/ext/2.2">
-  <gx:FlyTo>
-    <gx:duration>3</gx:duration>
-    <gx:flyToMode>smooth</gx:flyToMode>
-    <LookAt>
-      <latitude>$latitude</latitude>
-      <longitude>$longitude</longitude>
-      <altitude>$altitude</altitude>
-      <heading>$heading</heading>
-      <tilt>$tilt</tilt>
-      <range>$range</range>
-    </LookAt>
-  </gx:FlyTo>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document></Document>
 </kml>
 ''';
 
-    await sendKml(flyToKml);
+    await _exec("echo '$emptyKml' > /var/www/html/kml/slave_$screen.kml");
   }
 }

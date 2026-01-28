@@ -154,8 +154,8 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Send Pyramid KML',
               enabled: _isConnected,
               onPressed: () => _runAction(() async {
-                final kmlString = await KmlLoader.loadPyramidKml();
-                await _lgService!.showPyramid(kmlString);
+                final kml = await KmlLoader.loadPyramidKml();
+                await _lgService!.showPyramid(kml);
               }),
             ),
             const SizedBox(height: 12),
@@ -178,14 +178,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 12),
 
-            ActionButton(
-              label: 'Clear Pyramid',
-              enabled: _isConnected,
-              onPressed: () => _runAction(() async {
-                await _lgService!.clearPyramid();
-              }),
-            ),
-
+            // ActionButton(
+            //   label: 'Clear Pyramid',
+            //   enabled: _isConnected,
+            //   onPressed: () => _runAction(() async {
+            //     await _lgService!.clearPyramid();
+            //   }),
+            // ),
             const SizedBox(height: 24),
             _statusWidget(),
           ],

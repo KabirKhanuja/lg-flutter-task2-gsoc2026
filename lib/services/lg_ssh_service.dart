@@ -95,27 +95,27 @@ class LgSshService {
   // pyramid logic
 
   Future<void> showPyramid(String kmlContent) async {
-    await _exec(
-      "cat << 'EOF' > /var/www/html/kml/slave_1.kml\n"
-      "$kmlContent\n"
-      "EOF",
-    );
+    await _exec("""
+cat << 'EOF' > /var/www/html/kml/slave_1.kml
+$kmlContent
+EOF
+""");
   }
 
-  Future<void> clearPyramid() async {
-    const emptyKml = '''
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-<Document></Document>
-</kml>
-''';
+  //   Future<void> clearPyramid() async {
+  //     const emptyKml = '''
+  // <?xml version="1.0" encoding="UTF-8"?>
+  // <kml xmlns="http://www.opengis.net/kml/2.2">
+  // <Document></Document>
+  // </kml>
+  // ''';
 
-    await _exec(
-      "cat << 'EOF' > /var/www/html/kml/slave_1.kml\n"
-      "$emptyKml\n"
-      "EOF",
-    );
-  }
+  //     await _exec(
+  //       "cat << 'EOF' > /var/www/html/kml/slave_1.kml\n"
+  //       "$emptyKml\n"
+  //       "EOF",
+  //     );
+  //   }
 
   // for the logo
 

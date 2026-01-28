@@ -20,7 +20,7 @@
 			<z>1</z>
 		</Scale>
 		<Link>
-			<href>http://lg1:81/model_0.dae</href>
+			<href>model_0.dae</href>
 		</Link>
 		<ResourceMap>
 		</ResourceMap>

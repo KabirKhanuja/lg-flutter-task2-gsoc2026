@@ -50,7 +50,7 @@ class LgSshService {
   }
 
   Future<void> _exec(String command) async {
-    print('🛰️ SSH >>> $command');
+    print('SSH >>> $command');
 
     while (_busy) {
       await Future.delayed(const Duration(milliseconds: 50));
@@ -76,10 +76,10 @@ class LgSshService {
       await session.done;
 
       if (stdout.trim().isNotEmpty) {
-        print('✅ STDOUT:\n$stdout');
+        print('STDOUT:\n$stdout');
       }
       if (stderr.trim().isNotEmpty) {
-        print('❌ STDERR:\n$stderr');
+        print('STDERR:\n$stderr');
       }
     } finally {
       _busy = false;

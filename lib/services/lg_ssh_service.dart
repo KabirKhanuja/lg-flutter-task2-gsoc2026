@@ -142,5 +142,30 @@ class LgSshService {
     await _exec("echo '$emptyKml' > /var/www/html/kml/slave_$screen.kml");
   }
 
-  Future<void> sendKml(String kmlContent) async {}
+  Future<void> sendKml(String kmlContent) async {
+    for (int screen = 1; screen <= 3; screen++) {
+      await _exec(
+        "cat << 'EOF' > /var/www/html/kml/slave_$screen.kml\n"
+        "$kmlContent\n"
+        "EOF",
+      );
+    }
+  }
+
+  Future<void> clearPyramid() async {
+    const emptyKml = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document></Document>
+</kml>
+''';
+
+    for (int screen = 1; screen <= 3; screen++) {
+      await _exec(
+        "cat << 'EOF' > /var/www/html/kml/slave_$screen.kml\n"
+        "$emptyKml\n"
+        "EOF",
+      );
+    }
+  }
 }

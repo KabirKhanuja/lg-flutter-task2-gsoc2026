@@ -156,8 +156,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () => _runAction(() async {
                 final kmlString = await KmlLoader.loadPyramidKml();
 
-                // Send pyramid directly to slave_1 (world object)
                 await _lgService!.sendKml(kmlString);
+                // writing to /var/www/html/kml/slave_1.kml
               }),
             ),
             const SizedBox(height: 12),

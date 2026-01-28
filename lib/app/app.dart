@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
+import 'app_theme.dart';
 
 class LGApp extends StatelessWidget {
   const LGApp({super.key});
@@ -9,10 +10,7 @@ class LGApp extends StatelessWidget {
     return MaterialApp(
       title: 'Liquid Galaxy Controller',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.theme,
       home: const HomeScreen(),
     );
   }

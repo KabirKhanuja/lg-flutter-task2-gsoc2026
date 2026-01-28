@@ -156,13 +156,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () => _runAction(() async {
                 final kmlString = await KmlLoader.loadPyramidKml();
 
-                // write temp file
-                final tempDir = await Directory.systemTemp.createTemp();
-                final file = File('${tempDir.path}/pyramid.kml');
-                await file.writeAsString(kmlString);
-
-                await _lgService!.uploadKml(file, 'pyramid');
-                await _lgService!.runKml('pyramid');
+                // Send pyramid directly to slave_1 (world object)
+                await _lgService!.sendKml(kmlString);
               }),
             ),
             const SizedBox(height: 12),

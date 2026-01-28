@@ -11,19 +11,31 @@ class LgSshService {
   // connection logic
 
   Future<void> connect() async {
-    if (_client != null) return;
+    try {
+      _client?.close();
+      _client = null;
 
-    final socket = await SSHSocket.connect(
-      config.host,
-      config.port,
-      timeout: const Duration(seconds: 5),
-    );
+      final socket = await SSHSocket.connect(
+        config.host,
+        config.port,
+        timeout: const Duration(seconds: 5),
+      );
 
-    _client = SSHClient(
-      socket,
-      username: config.username,
-      onPasswordRequest: () => config.password,
-    );
+      final client = SSHClient(
+        socket,
+        username: config.username,
+        onPasswordRequest: () => config.password,
+      );
+
+      final session = await client.execute('echo LG_CONNECTED');
+      await session.done;
+
+      _client = client;
+    } catch (e) {
+      _client?.close();
+      _client = null;
+      rethrow;
+    }
   }
 
   Future<void> disconnect() async {
@@ -32,11 +44,21 @@ class LgSshService {
   }
 
   Future<void> _exec(String command) async {
-    if (_client == null) {
-      throw Exception('LG SSH not connected');
+    try {
+      if (_client == null) {
+        await connect();
+      }
+      final session = await _client!.execute(command);
+      await session.done;
+    } catch (_) {
+      _client?.close();
+      _client = null;
+
+      await connect();
+
+      final session = await _client!.execute(command);
+      await session.done;
     }
-    final session = await _client!.execute(command);
-    await session.done;
   }
 
   // flying home
@@ -108,4 +130,6 @@ class LgSshService {
 
     await _exec("echo '$emptyKml' > /var/www/html/kml/slave_$screen.kml");
   }
+
+  Future<void> sendKml(String kmlContent) async {}
 }

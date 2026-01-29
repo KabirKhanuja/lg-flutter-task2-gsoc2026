@@ -77,25 +77,84 @@ Example flow:
 
 ---
 
-### 3. kmls.txt (Master KML Loader)
+### 3. kmls.txt and query.txt (Control Mechanisms)
 
-`/var/www/html/kmls.txt` is continuously polled by Google Earth on the LG rig.
-- When a URL is written to this file:
+Liquid Galaxy provides two primary mechanisms for loading KML content:
 
-```
-http://lg1:81/pyramid.kml
-```
+#### kmls.txt (Network Link Control)
+`/var/www/html/kmls.txt` is polled by Google Earth for persistent overlays and screen elements.
+- Used primarily for logos and overlays
+- Supports multiple URLs (one per line)
+- Changes are reflected based on refresh intervals
 
-- Google Earth fetches and renders that KML
+#### query.txt (Dynamic Content Loading)
+`/tmp/query.txt` is the recommended method for loading placemarks and 3D models.
+- Supports flyto commands and camera positioning
+- Better for dynamic content that includes LookAt tags
+- Used for the pyramid model in this implementation
 
-Clearing KMLs:
+**Critical Implementation Detail:**
+
+For 3D models with placemarks, query.txt provides superior control:
 ```bash
-> /var/www/html/kmls.txt
+echo "http://lg1:81/kml/master.kml" > /tmp/query.txt
 ```
 
-This is how:
-- Pyramid is shown
-- Pyramid is removed
+This is because:
+- kmls.txt treats content as overlays
+- query.txt properly handles placemark-based KML with camera controls
+- Models with LookAt tags require query.txt for correct positioning
+
+---
+
+## Clearing KML Content
+
+### The Challenge
+
+Clearing 3D models and KML content from Liquid Galaxy is non-trivial because:
+- Google Earth caches loaded content
+- Simply removing files does not immediately clear the display
+- Network links maintain references until explicitly updated
+
+### Implemented Solution
+
+The application uses a file overwrite strategy:
+
+1. **Overwrite master.kml with empty KML:**
+```dart
+const emptyKml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document></Document>
+</kml>''';
+```
+
+2. **Write the empty content to the same file path:**
+```dart
+await sftp.open('/var/www/html/kml/master.kml', mode: write);
+await file.write(emptyKml);
+```
+
+3. **Force Google Earth to reload:**
+```bash
+echo "exittour=true" > /tmp/query.txt &&
+echo "http://lg1:81/kml/master.kml" > /tmp/query.txt
+```
+
+### Why This Works
+
+- Using a fixed filename (master.kml) allows Google Earth to track the resource
+- Overwriting with empty content removes all placemarks and models
+- The `exittour=true` command ensures any active tour is terminated
+- Reloading the URL forces Google Earth to fetch the updated (now empty) file
+- The refresh interval in myplaces.kml ensures the change propagates
+
+### Alternative Approaches Tested
+
+The following approaches were tested but found less reliable:
+- Deleting the KML file entirely (causes 404 errors)
+- Writing empty string to query.txt (Google Earth retains previous content)
+- Using planetariumoff command (inconsistent behavior)
+- Flying to a distant location (does not unload the model)
 
 ---
 
@@ -149,12 +208,42 @@ This allows:
 
 ## 3D Model (DAE) Configuration
 
-### File Placement
+### File Placement and Path Structure
 
-The 3D model file must be placed exactly at:
+The Liquid Galaxy system uses a specific directory structure within the Apache web root:
 ```
+/var/www/html/kml/master.kml
 /var/www/html/model_1.dae
 ```
+
+**Important Path Discovery:**
+During implementation, it was discovered that the master KML file must be placed in:
+```
+/var/www/html/kml/master.kml
+```
+
+Not in the root of `/var/www/html/`. This is accessed via:
+```
+http://lg1:81/kml/master.kml
+```
+
+The double-slash in the URL (`http://lg1:81//kml/master.kml`) may appear in some configurations but is automatically normalized by Apache.
+
+### Upload Sequence
+
+The correct upload sequence is critical:
+
+1. Upload the DAE model file first:
+```dart
+await uploadModelFile(modelData, 'model_1.dae');
+```
+
+2. Then upload and load the KML file:
+```dart
+await showPyramid(kmlContent);
+```
+
+If the KML is loaded before the model file exists, Google Earth will fail to find the referenced model and display an error placeholder.
 
 ### KML Reference
 
@@ -203,17 +292,90 @@ The Flutter app also implements:
 ## Application Flow (Simplified)
 
 1. User opens the Flutter app
-2. App loads LG connection configuration
+2. App loads LG connection configuration from persistent storage
 3. SSH connection is established to lg1
-4. User presses an action button:
-   - **Logo** → Writes slave KML
-   - **Pyramid** → Uploads KML + writes kmls.txt
-   - **FlyTo** → Writes to `/tmp/query.txt`
-5. Google Earth:
-   - Polls kmls.txt
-   - Fetches KML via HTTP
-   - Fetches DAE via HTTP
-   - Renders the scene
+4. Connection status is displayed with real-time updates
+5. User presses an action button:
+   - **Logo** → Generates and writes slave_3.kml via SSH
+   - **Pyramid** → Uploads model_1.dae via SFTP, uploads master.kml, writes to query.txt
+   - **FlyTo** → Writes LookAt command to `/tmp/query.txt`
+   - **Clear Logo** → Overwrites slave_3.kml with empty document
+   - **Clear KML** → Overwrites master.kml with empty document, reloads via query.txt
+6. Google Earth:
+   - Polls query.txt and kml files based on refresh intervals
+   - Fetches KML via HTTP from lg1:81
+   - Fetches DAE model via HTTP
+   - Renders the scene with proper camera positioning
+
+### Connection Management
+
+The application implements robust connection handling:
+- Automatic connection on startup
+- Connection state tracking (connecting, connected, disconnected)
+- Automatic reconnection before executing commands
+- Manual connection testing via settings screen
+- Configuration persistence using shared preferences
+
+### Error Handling
+
+All SSH and SFTP operations include:
+- Timeout handling (2-second connection timeout)
+- Exception catching and user notification
+- Automatic state updates on failure
+- Detailed error messages in snackbars
+
+---
+
+## Technical Implementation Details
+
+### Dependencies
+- `dartssh2`: SSH and SFTP client for Dart/Flutter
+- `shared_preferences`: Persistent configuration storage
+- `flutter/services.dart`: Asset loading for KML and DAE files
+
+### Project Structure
+```
+lib/
+  app/
+    app.dart              # Main app widget
+    app_theme.dart        # Material 3 theme configuration
+  models/
+    lg_command.dart       # LG command models
+  screens/
+    home_screen.dart      # Main controller interface
+  services/
+    lg_ssh_service.dart   # SSH/SFTP operations
+    kml/
+      kml_loader.dart     # Asset loading utilities
+  settings/
+    lg_config_storage.dart      # Configuration persistence
+    lg_connection_config.dart   # Configuration model
+    settings_screen.dart        # Settings UI
+  widgets/
+    action_button.dart    # Reusable button component
+  utils/
+    constants.dart        # Application constants
+```
+
+### Key Design Decisions
+
+1. **Fixed Filenames**: Using `master.kml` instead of timestamped filenames allows proper refresh behavior and reliable clearing.
+
+2. **SFTP Over SSH Commands**: File uploads use SFTP rather than SSH echo commands for better reliability with binary files and large content.
+
+3. **Connection Pooling**: A single SSH client is maintained and reused across operations to minimize connection overhead.
+
+4. **Busy Flag**: A global busy flag prevents concurrent SSH operations that could cause command interleaving.
+
+5. **Query.txt Over kmls.txt**: The pyramid uses query.txt because it includes a LookAt tag for camera positioning, which is better handled by the query mechanism.
+
+### State Management
+
+The application uses `StatefulWidget` with simple state management:
+- Connection status enum (connecting, connected, disconnected)
+- No external state management library required
+- setState() for UI updates
+- Async/await for all SSH operations
 
 ---
 

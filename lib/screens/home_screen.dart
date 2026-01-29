@@ -4,6 +4,7 @@ import '../settings/lg_config_storage.dart';
 import '../services/lg_ssh_service.dart';
 import '../settings/settings_screen.dart';
 import '../services/kml/kml_loader.dart';
+import '../app/app_theme.dart';
 
 enum LgStatus { connecting, connected, disconnected }
 
@@ -35,30 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _statusWidget() {
     switch (_status) {
       case LgStatus.connecting:
-        return const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            SizedBox(width: 12),
-            Text('Connecting to Liquid Galaxy…'),
-          ],
-        );
-
+        return const SizedBox();
       case LgStatus.connected:
-        return const Text(
-          '● LG Connected',
-          style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-        );
-
+        return const SizedBox();
       case LgStatus.disconnected:
-        return const Text(
-          '● LG Not Connected',
-          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-        );
+        return const SizedBox();
     }
   }
 
@@ -113,87 +95,156 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Liquid Galaxy Controller'),
-        centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Settings',
         onPressed: () {
           Navigator.of(
             context,
-          ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+          ).push(MaterialPageRoute(
+            builder: (_) => SettingsScreen(
+              connectionStatus: _status,
+              onRefreshConnection: () async {
+                _lgService?.disconnect();
+                _lgService = null;
+                setState(() => _status = LgStatus.disconnected);
+                await _ensureConnected();
+              },
+            ),
+          ));
         },
         child: const Icon(Icons.settings),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ActionButton(
-              label: 'Show LG Logo',
-              enabled: _isConnected,
-              onPressed: () => _runAction(() async {
-                await _lgService!.showLogo(
-                  screen: 3,
-                  imageUrl:
-                      'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgXmdNgBTXup6bdWew5RzgCmC9pPb7rK487CpiscWB2S8OlhwFHmeeACHIIjx4B5-Iv-t95mNUx0JhB_oATG3-Tq1gs8Uj0-Xb9Njye6rHtKKsnJQJlzZqJxMDnj_2TXX3eA5x6VSgc8aw/s320-rw/LOGO+LIQUID+GALAXY-sq1000-+OKnoline.png',
-                );
-              }),
-            ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Connection Status Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.lightGrey,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _status == LgStatus.connected
+                        ? Colors.green
+                        : _status == LgStatus.connecting
+                            ? Colors.orange
+                            : Colors.red,
+                    width: 2,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    if (_status == LgStatus.connecting)
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.orange),
+                        ),
+                      )
+                    else
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _status == LgStatus.connected
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                      ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _status == LgStatus.connected
+                            ? 'Connected to Liquid Galaxy'
+                            : _status == LgStatus.connecting
+                                ? 'Connecting to Liquid Galaxy…'
+                                : 'Not Connected',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
 
-            const SizedBox(height: 12),
+              // Actions Section
+              Text(
+                'Actions',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: AppTheme.textPrimary,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              ActionButton(
+                label: 'Show LG Logo',
+                enabled: _isConnected,
+                onPressed: () => _runAction(() async {
+                  await _lgService!.showLogo(
+                    screen: 3,
+                    imageUrl:
+                        'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgXmdNgBTXup6bdWew5RzgCmC9pPb7rK487CpiscWB2S8OlhwFHmeeACHIIjx4B5-Iv-t95mNUx0JhB_oATG3-Tq1gs8Uj0-Xb9Njye6rHtKKsnJQJlzZqJxMDnj_2TXX3eA5x6VSgc8aw/s320-rw/LOGO+LIQUID+GALAXY-sq1000-+OKnoline.png',
+                  );
+                }),
+              ),
+              const SizedBox(height: 12),
+              ActionButton(
+                label: 'Send Pyramid KML',
+                enabled: _isConnected,
+                onPressed: () => _runAction(() async {
+                  final modelData = await KmlLoader.loadPyramidModel();
+                  await _lgService!.uploadModelFile(modelData, 'model_1.dae');
+                  final kmlString = await KmlLoader.loadPyramidKml();
+                  await _lgService!.showPyramid(kmlString);
+                }),
+              ),
+              const SizedBox(height: 12),
+              ActionButton(
+                label: 'Fly To Home City',
+                enabled: _isConnected,
+                onPressed: () => _runAction(() async {
+                  await _lgService!.flyTo(18.5204, 73.8567);
+                }),
+              ),
+              const SizedBox(height: 32),
 
-            // pyramid
-            ActionButton(
-              label: 'Send Pyramid KML',
-              enabled: _isConnected,
-              onPressed: () => _runAction(() async {
-                // first uploading the dae in lg
-                final modelData = await KmlLoader.loadPyramidModel();
-                await _lgService!.uploadModelFile(modelData, 'model_1.dae');
-
-                // then uploading the kml
-                final kmlString = await KmlLoader.loadPyramidKml();
-                await _lgService!.showPyramid(kmlString);
-              }),
-            ),
-
-            const SizedBox(height: 12),
-
-            // fly to
-            ActionButton(
-              label: 'Fly To Home City',
-              enabled: _isConnected,
-              onPressed: () => _runAction(() async {
-                await _lgService!.flyTo(18.5204, 73.8567); // Pune
-              }),
-            ),
-
-            const SizedBox(height: 12),
-
-            // logo
-            ActionButton(
-              label: 'Clear Logos',
-              enabled: _isConnected,
-              onPressed: () => _runAction(() async {
-                await _lgService!.clearLogo(3);
-              }),
-            ),
-
-            const SizedBox(height: 12),
-
-            ActionButton(
-              label: 'Clear KMLs',
-              enabled: _isConnected,
-              onPressed: () => _runAction(() async {
-                await _lgService!.clearPyramid();
-              }),
-            ),
-
-            const SizedBox(height: 24),
-            _statusWidget(),
-          ],
+              // Clear Section
+              Text(
+                'Clear',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: AppTheme.textPrimary,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              ActionButton(
+                label: 'Clear Logos',
+                enabled: _isConnected,
+                onPressed: () => _runAction(() async {
+                  await _lgService!.clearLogo(3);
+                }),
+              ),
+              const SizedBox(height: 12),
+              ActionButton(
+                label: 'Clear KMLs',
+                enabled: _isConnected,
+                onPressed: () => _runAction(() async {
+                  await _lgService!.clearPyramid();
+                }),
+              ),
+            ],
+          ),
         ),
       ),
     );

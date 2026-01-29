@@ -1,4 +1,4 @@
-# Liquid Galaxy Controller App (Flutter)
+# Liquid Galaxy Controller Flutter App 
 
 ## Overview
 
@@ -13,6 +13,11 @@ The app provides the following core functionalities:
 - Clear loaded KMLs from the LG system
 
 The implementation follows standard Liquid Galaxy architecture and is aligned with prior reference implementations (notably Lucia's 2025 LG project).
+
+## Diagram
+
+<img width="5971" height="3724" alt="image" src="https://github.com/user-attachments/assets/d22c1d3e-4690-4951-b1a6-e61fec460380" />
+
 
 ---
 

@@ -103,8 +103,9 @@ class LgSshService {
       '/var/www/html/$fileName',
       mode:
           SftpFileOpenMode.create |
-          SftpFileOpenMode.truncate |
+          SftpFileOpenMode.truncate |   
           SftpFileOpenMode.write,
+                  
     );
 
     await file.write(Stream.value(modelData));
